@@ -199,6 +199,11 @@ parser.command('init')
     abbr: 'i',
     help: 'Run in interactive mode'
   })
+  .option('lang', {
+    metavar : 'LANG',
+    abbr: 'l',
+    help : 'The language to use <javascript|rust|python|js|rs|py>. Javascript by default'
+  })
   .help('Initialize repository for your Tessel project');
 
 makeCommand('wifi')
