@@ -200,9 +200,9 @@ parser.command('init')
     help: 'Run in interactive mode'
   })
   .option('lang', {
-    metavar : 'LANG',
+    metavar: 'LANG',
     abbr: 'l',
-    help : 'The language to use <javascript|rust|python|js|rs|py>. Javascript by default'
+    help: 'The language to use <javascript|rust|python|js|rs|py>. Javascript by default'
   })
   .help('Initialize repository for your Tessel project');
 
