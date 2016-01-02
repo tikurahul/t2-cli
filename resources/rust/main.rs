@@ -1,17 +1,29 @@
-// Import the interface to Tessel hardware
-extern crate rust_tessel as tessel;
+/// A blinky example for Tessel
+
+// Import the tessel library
+extern crate rust_tessel;
+// Import the Tessel API
+use rust_tessel::Tessel;
+// Import sleep from the standard lib
+use std::thread::sleep;
+// Import durations from the standard lib
+use std::time::Duration;
 
 fn main() {
-  
-  // Set the led pins as outputs with initial states
-  let led1 = tessel.led[0].output(1);
-  let led2 = tessel.led[1].output(0);
+    // Create a new Tessel
+    let mut tessel = Tessel::new();
 
-  // Toggle the led states
-  loop {
+    // Turn on one of the LEDs
+    tessel.led[2].on().unwrap();
+
     println!("I'm blinking! (Press CTRL + C to stop)");
-    led1.toggle();
-    led2.toggle();
-  }
 
+    // Loop forever
+    loop {
+        // Toggle each LED
+        tessel.led[2].toggle().unwrap();
+        tessel.led[3].toggle().unwrap();
+        // Re-execute the loop after sleeping for 100ms
+        sleep(Duration::from_millis(100));
+    }
 }
