@@ -820,6 +820,9 @@ exports['Tessel.update'] = {
     done();
   },
   standardUpdate: function(test) {
+    // Set the amount of time Tessel waits for the OpenWRT update
+    // to complete to 1ms so we don't wait forever
+    Tessel.openWRTUpdateTime = 1;
     var updatePath = path.join('/tmp/', updates.OPENWRT_BINARY_FILE);
     // The exec commands that should be run to update OpenWRT
     var expectedCommands = [commands.openStdinToFile(updatePath), commands.sysupgrade(updatePath)];
