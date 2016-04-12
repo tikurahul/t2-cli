@@ -5,10 +5,17 @@ var path = require('path');
 
 // Third Party Dependencies
 var parser = require('nomnom').script('t2');
+const updateNotifier = require('update-notifier');
+
+// Check for updates
+const pkg = require('../package.json');
+updateNotifier({
+  pkg
+}).notify();
 
 // Internal
 var controller = require('../lib/controller');
-var crashReporter = require('../lib/crash_reporter');
+var CrashReporter = require('../lib/crash_reporter');
 var init = require('../lib/init');
 var logs = require('../lib/logs');
 var drivers = require('./tessel-install-drivers');
@@ -71,7 +78,29 @@ parser.command('install-drivers')
   })
   .help('Install drivers');
 
-var reporter = parser.command('crash-reporter')
+parser.command('crash-reporter')
+  .callback(opts => {
+    // t2 crash-reporter --on
+    if (opts.on) {
+      return CrashReporter.on().then(() => {
+        // t2 crash-reporter --on --test
+        if (opts.test) {
+          CrashReporter.test().then(module.exports.closeSuccessfulCommand);
+        }
+      }).then(module.exports.closeSuccessfulCommand, module.exports.closeFailedCommand);
+    } else if (opts.off) {
+    // t2 crash-reporter --on
+      return CrashReporter.off()
+        .then(module.exports.closeSuccessfulCommand, module.exports.closeFailedCommand);
+    }
+
+    // t2 crash-reporter --test
+    if (opts.test) {
+      // not handling failures, as we want to trigger a crash
+      CrashReporter.test()
+        .then(module.exports.closeSuccessfulCommand);
+    }
+  })
   .option('off', {
     flag: true,
     help: 'Disable the Crash Reporter.'
@@ -79,28 +108,11 @@ var reporter = parser.command('crash-reporter')
   .option('on', {
     flag: true,
     help: 'Enable the Crash Reporter.'
-  });
-
-if (process.env.DEV_MODE === 'true') {
-  reporter.option('test', {
+  })
+  .option('test', {
     flag: true,
     help: 'Test the Crash Reporter.'
   });
-}
-
-reporter.callback(opts => {
-  if (opts.test) {
-    // not handling failures, as we want to trigger a crash
-    crashReporter.testSubmit()
-      .then(module.exports.closeSuccessfulCommand);
-  } else if (opts.on) {
-    crashReporter.turnOn()
-      .then(module.exports.closeSuccessfulCommand, module.exports.closeFailedCommand);
-  } else if (opts.off) {
-    crashReporter.turnOff()
-      .then(module.exports.closeSuccessfulCommand, module.exports.closeFailedCommand);
-  }
-});
 
 parser.command('provision')
   .callback(callControllerCallback('provisionTessel'))
@@ -172,7 +184,16 @@ makeCommand('run')
     default: false,
     help: 'Deploy all files in project including those not used by the program, excluding any files matched by non-negated rules in .tesselignore and including any files matched by rules in .tesselinclude. Program is run from specified "entryPoint" file.'
   })
-  .help('Deploy a script to Tessel and run it with Node');
+  .help(`
+    Deploy a script to Tessel and run it with Node.
+
+    Assets that are not directly deployed as a dependency via require analysis,
+    for example images or html files of an application (and their directories),
+    must be listed in a .tesselinclude in the root of your project.
+    This can be created manually or by typing 't2 init'.
+
+    For more information, visit: https://tessel.io/docs/cli#starting-projects
+  `);
 
 makeCommand('push')
   .callback(function(opts) {
@@ -207,7 +228,17 @@ makeCommand('push')
     default: false,
     help: 'Push all files in project including those not used by the program, excluding any files matched by non-negated rules in .tesselignore and including any files matched by rules in .tesselinclude. Program is run from specified "entryPoint" file.'
   })
-  .help('Pushes the file/dir to Flash memory to be run anytime the Tessel is powered, runs the file immediately once the file is copied over');
+  .help(`
+    Pushes the file/dir to Flash memory to be run anytime the Tessel is powered,
+    runs the file immediately once the file is copied over.
+
+    Assets that are not directly deployed as a dependency via require analysis,
+    for example images or html files of an application (and their directories),
+    must be listed in a .tesselinclude in the root of your project.
+    This can be created manually or by typing 't2 init'.
+
+    For more information, visit: https://tessel.io/docs/cli#starting-projects
+  `);
 
 makeCommand('erase')
   .callback(callControllerCallback('eraseScript'))
@@ -321,6 +352,17 @@ makeCommand('update')
     required: false,
     flag: true,
     help: 'Update to the latest version regardless of current version.'
+  })
+  .option('openwrt-path', {
+    abbr: 'op',
+    required: false,
+    flag: false,
+    help: 'Update with the OpenWRT image at the indicated local path.'
+  })
+  .option('firmware-path', {
+    abbr: 'fp',
+    required: false,
+    help: 'Update with the firmware image at the indicated local path.'
   })
   .callback(function(opts) {
     if (opts.list) {
